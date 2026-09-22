@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "spool",
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "compatibility_date": "2026-09-22",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare",
+  },
+  "routes": [{ "pattern": "spool.at", "custom_domain": true }],
+  "observability": { "enabled": true },
+  "vars": {
+    // Written permanently into published article records and link posts.
+    "PUBLIC_APP_ORIGIN": "https://spool.at",
+    // Add once the extension ID is pinned (comma separated):
+    // "PUBLIC_EXTENSION_REDIRECT_URIS": "https://<extension-id>.chromiumapp.org/"
+  },
+}

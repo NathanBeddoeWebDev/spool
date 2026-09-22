@@ -1,0 +1,32 @@
+{
+  "name": "@spool/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --host 127.0.0.1 --port 5173",
+    "build": "vite build",
+    "preview": "vite build && wrangler dev --ip 127.0.0.1 --port 4173",
+    "deploy": "vite build && wrangler deploy",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.20.44",
+    "@atproto/oauth-client-browser": "^0.5.7",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource-variable/newsreader": "^5.3.0",
+    "@spool/core": "workspace:*",
+    "@spool/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-cloudflare": "^7.2.9",
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "svelte": "^5.57.1",
+    "svelte-check": "^4.7.6",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.0",
+    "wrangler": "^4.136.1"
+  }
+}

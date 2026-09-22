@@ -1,0 +1,128 @@
+/* Long-form reading typography, shared by the article page. */
+.prose {
+  font-family: var(--sp-font-serif);
+  font-size: 21px;
+  line-height: 1.7;
+  color: var(--sp-ink);
+  font-optical-sizing: auto;
+  overflow-wrap: break-word;
+}
+.prose > * + * {
+  margin-top: 1.1em;
+}
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote,
+.prose pre,
+.prose table,
+.prose figure {
+  margin-bottom: 0;
+}
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  margin: 1.8em 0 0;
+}
+.prose h1 {
+  font-size: 1.6em;
+}
+.prose h2 {
+  font-size: 1.35em;
+}
+.prose h3 {
+  font-size: 1.15em;
+}
+.prose h4 {
+  font-size: 1em;
+}
+.prose a {
+  color: inherit;
+  text-decoration-color: var(--sp-accent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+.prose a:hover {
+  color: var(--sp-accent);
+}
+.prose strong {
+  font-weight: 650;
+}
+.prose ul,
+.prose ol {
+  padding-left: 1.3em;
+}
+.prose li + li {
+  margin-top: 0.35em;
+}
+.prose li::marker {
+  color: var(--sp-muted);
+}
+.prose blockquote {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--sp-accent);
+  font-style: italic;
+  color: var(--sp-ink-2);
+}
+.prose code {
+  font-family: var(--sp-font-mono);
+  font-size: 0.8em;
+  padding: 0.15em 0.35em;
+  border-radius: 6px;
+  background: var(--sp-sunken);
+}
+.prose pre {
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: var(--sp-sunken);
+  overflow-x: auto;
+  line-height: 1.5;
+}
+.prose pre code {
+  padding: 0;
+  background: none;
+  font-size: 0.75em;
+}
+.prose hr {
+  border: 0;
+  text-align: center;
+  margin: 2.2em 0;
+}
+.prose hr::after {
+  content: '· · ·';
+  letter-spacing: 0.6em;
+  color: var(--sp-muted);
+}
+.prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin: 1.6em auto;
+}
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sp-font-ui);
+  font-size: 15px;
+}
+.prose th,
+.prose td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--sp-line);
+  text-align: left;
+}
+.prose th {
+  font-weight: 650;
+}
+@media (max-width: 600px) {
+  .prose {
+    font-size: 19px;
+  }
+}

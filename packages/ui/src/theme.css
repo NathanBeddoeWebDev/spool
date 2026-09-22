@@ -1,0 +1,296 @@
+/* Spool design tokens. Apps import this once; components use the variables. */
+:root {
+  --sp-bg: #f5f2eb;
+  --sp-surface: #fffdf9;
+  --sp-raised: #ffffff;
+  --sp-sunken: #efebe2;
+  --sp-ink: #1d1b18;
+  --sp-ink-2: #48443d;
+  --sp-muted: #8a8378;
+  --sp-line: #e6e0d4;
+  --sp-line-strong: #d3cbbb;
+  --sp-accent: #2e6b41;
+  --sp-accent-hover: #235634;
+  --sp-accent-soft: #e2efe4;
+  --sp-accent-ink: #ffffff;
+  --sp-link: #1c64d8;
+  --sp-warn: #b86e0f;
+  --sp-danger: #c0392b;
+  --sp-ok: #2f855a;
+
+  --sp-radius-sm: 8px;
+  --sp-radius: 14px;
+  --sp-radius-lg: 20px;
+  --sp-shadow: 0 1px 2px rgb(29 27 24 / 0.04), 0 10px 30px -14px rgb(29 27 24 / 0.18);
+  --sp-shadow-lg: 0 2px 4px rgb(29 27 24 / 0.04), 0 24px 60px -20px rgb(29 27 24 / 0.3);
+  --sp-ring: 0 0 0 3px color-mix(in srgb, var(--sp-accent) 28%, transparent);
+
+  --sp-font-ui: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sp-font-serif: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif;
+  --sp-font-mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --sp-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --sp-grain-opacity: 0.045;
+
+  /* Layering scale: content < sheet < menu < dialog */
+  --sp-z-sheet: 10;
+  --sp-z-menu: 20;
+  --sp-z-dialog: 30;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --sp-bg: #131210;
+    --sp-surface: #1a1916;
+    --sp-raised: #211f1c;
+    --sp-sunken: #0f0e0c;
+    --sp-ink: #eeeae3;
+    --sp-ink-2: #c9c3b8;
+    --sp-muted: #8f887c;
+    --sp-line: #2c2a26;
+    --sp-line-strong: #3a3732;
+    --sp-accent: #6fbf85;
+    --sp-accent-hover: #83cf9b;
+    --sp-accent-soft: #1a3527;
+    --sp-accent-ink: #0e2318;
+    --sp-link: #6aa5ff;
+    --sp-warn: #f0a849;
+    --sp-danger: #ff7b6b;
+    --sp-ok: #5fd08f;
+    --sp-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -14px rgb(0 0 0 / 0.6);
+    --sp-shadow-lg: 0 2px 4px rgb(0 0 0 / 0.3), 0 24px 60px -20px rgb(0 0 0 / 0.7);
+    --sp-grain-opacity: 0.06;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --sp-bg: #131210;
+  --sp-surface: #1a1916;
+  --sp-raised: #211f1c;
+  --sp-sunken: #0f0e0c;
+  --sp-ink: #eeeae3;
+  --sp-ink-2: #c9c3b8;
+  --sp-muted: #8f887c;
+  --sp-line: #2c2a26;
+  --sp-line-strong: #3a3732;
+  --sp-accent: #6fbf85;
+  --sp-accent-hover: #83cf9b;
+  --sp-accent-soft: #1a3527;
+  --sp-accent-ink: #0e2318;
+  --sp-link: #6aa5ff;
+  --sp-warn: #f0a849;
+  --sp-danger: #ff7b6b;
+  --sp-ok: #5fd08f;
+  --sp-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -14px rgb(0 0 0 / 0.6);
+  --sp-shadow-lg: 0 2px 4px rgb(0 0 0 / 0.3), 0 24px 60px -20px rgb(0 0 0 / 0.7);
+  --sp-grain-opacity: 0.06;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--sp-bg);
+  color: var(--sp-ink);
+  font-family: var(--sp-font-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Paper grain: fixed, behind content, never intercepts input. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--sp-grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.16 0 0 0 0 0.12 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--sp-ring);
+}
+
+/* Shared primitives */
+.sp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--sp-line-strong);
+  background: var(--sp-raised);
+  color: var(--sp-ink);
+  font-weight: 550;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition:
+    background 0.2s var(--sp-ease),
+    border-color 0.2s var(--sp-ease),
+    transform 0.1s var(--sp-ease);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.sp-btn:hover {
+  border-color: var(--sp-muted);
+}
+.sp-btn:active {
+  transform: scale(0.98);
+}
+.sp-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+.sp-btn-primary {
+  background: var(--sp-accent);
+  border-color: var(--sp-accent);
+  color: var(--sp-accent-ink);
+}
+.sp-btn-primary:hover:not(:disabled) {
+  background: var(--sp-accent-hover);
+  border-color: var(--sp-accent-hover);
+}
+.sp-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--sp-ink-2);
+}
+.sp-btn-ghost:hover {
+  background: var(--sp-sunken);
+  border-color: transparent;
+}
+.sp-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--sp-ink-2);
+  cursor: pointer;
+  transition:
+    background 0.2s var(--sp-ease),
+    color 0.2s var(--sp-ease),
+    transform 0.1s var(--sp-ease);
+}
+.sp-icon-btn:hover {
+  background: var(--sp-sunken);
+  color: var(--sp-ink);
+}
+.sp-icon-btn:active {
+  transform: scale(0.94);
+}
+.sp-icon-btn[aria-pressed='true'] {
+  background: var(--sp-accent-soft);
+  color: var(--sp-accent);
+}
+
+/* Tertiary action: plain text, for the least important choice in a group. */
+.sp-link {
+  border: 0;
+  background: none;
+  padding: 0 4px;
+  height: 38px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sp-ink-2);
+  text-decoration: underline;
+  text-decoration-color: var(--sp-line-strong);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition:
+    color 0.2s var(--sp-ease),
+    text-decoration-color 0.2s var(--sp-ease);
+}
+.sp-link:hover {
+  color: var(--sp-ink);
+  text-decoration-color: var(--sp-accent);
+}
+
+/* Small editorial label: sentence case, serif italic. Replaces all-caps kickers. */
+.sp-kicker {
+  margin: 0 0 8px 2px;
+  font-family: var(--sp-font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--sp-muted);
+}
+
+.sp-skip {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  transform: translateY(-72px);
+  z-index: var(--sp-z-dialog);
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--sp-ink);
+  color: var(--sp-bg);
+  font-size: 14px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: transform 0.2s var(--sp-ease);
+}
+.sp-skip:focus {
+  transform: none;
+}
+
+.sp-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--sp-line-strong);
+  background: var(--sp-raised);
+  transition:
+    border-color 0.2s var(--sp-ease),
+    box-shadow 0.2s var(--sp-ease);
+}
+.sp-input:focus {
+  outline: none;
+  border-color: var(--sp-accent);
+  box-shadow: var(--sp-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

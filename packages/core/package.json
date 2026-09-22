@@ -1,0 +1,25 @@
+{
+  "name": "@spool/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts",
+    "./markdown": "./src/markdown.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "check": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.20.44",
+    "@atproto/common-web": "^0.5.12",
+    "idb-keyval": "^6.3.0",
+    "marked": "^18.0.14"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.1"
+  }
+}

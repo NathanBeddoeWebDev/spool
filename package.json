@@ -1,0 +1,22 @@
+{
+  "name": "spool",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @spool/web dev",
+    "dev:ext": "pnpm --filter @spool/extension dev",
+    "deploy:web": "pnpm --filter @spool/web run deploy",
+    "build": "pnpm --filter @spool/web build && pnpm --filter @spool/extension build",
+    "test": "pnpm --filter @spool/core test",
+    "check": "pnpm -r --if-present check",
+    "lint": "oxlint",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.70.0",
+    "oxlint": "^1.85.0",
+    "typescript": "~5.9.3"
+  },
+  "packageManager": "pnpm@11.0.1"
+}

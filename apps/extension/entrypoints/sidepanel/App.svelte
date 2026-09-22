@@ -104,7 +104,8 @@
   {/if}
 
   <main id="main">
-    {#if session.status === 'loading' || !pageLoaded}
+    <!-- Wait for the page (local and quick; the Composer reads it on mount), not the session (network). -->
+    {#if !pageLoaded}
       <ComposerSkeleton />
     {:else}
       <Composer
@@ -114,7 +115,7 @@
         {draftStore}
         appOrigin={SPOOL_ORIGIN}
         pageContext={page}
-        onRequestSignIn={() => (signingIn = true)}
+        onRequestSignIn={() => session.status !== 'loading' && (signingIn = true)}
       />
     {/if}
   </main>

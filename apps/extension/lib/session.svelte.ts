@@ -1,6 +1,5 @@
-import { Agent } from '@atproto/api';
-import { BrowserOAuthClient, type OAuthSession } from '@atproto/oauth-client-browser';
-import { HANDLE_RESOLVER, OAUTH_SCOPE, getPublicAgent, type PublishContext } from '@spool/core';
+import type { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser';
+import { HANDLE_RESOLVER, OAUTH_SCOPE, type PublishContext } from '@spool/core';
 import type { Account } from '@spool/ui';
 
 export const SPOOL_ORIGIN = (import.meta.env.WXT_SPOOL_ORIGIN ?? '').replace(/\/+$/, '');
@@ -24,6 +23,9 @@ class ExtensionSession {
   }
 
   async #getClient() {
+    if (this.#client) return this.#client;
+    // Loaded on demand so the composer doesn't wait for the OAuth and API libraries.
+    const { BrowserOAuthClient } = await import('@atproto/oauth-client-browser');
     this.#client ??= await BrowserOAuthClient.load({
       clientId: `${SPOOL_ORIGIN}/extension-client-metadata.json`,
       handleResolver: HANDLE_RESOLVER,
@@ -63,6 +65,7 @@ class ExtensionSession {
   async #use(session: OAuthSession) {
     this.#session = session;
     const did = session.sub;
+    const [{ Agent }, { getPublicAgent }] = await Promise.all([import('@atproto/api'), import('@spool/core/richtext')]);
     let account: Account = { did, handle: did };
     try {
       const { data } = await getPublicAgent().getProfile({ actor: did });

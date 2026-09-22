@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { DraftImage } from '@spool/core';
   import Icon from './Icon.svelte';
-  import { blobUrl } from './lib/preview.ts';
+  import { blobUrl } from './lib/preview.svelte.ts';
 
   let { images = $bindable(), usable, note = '' }: { images: DraftImage[]; usable: number; note?: string } = $props();
 

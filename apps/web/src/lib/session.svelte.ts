@@ -1,6 +1,5 @@
-import { Agent } from '@atproto/api';
-import { BrowserOAuthClient, buildLoopbackClientId, type OAuthSession } from '@atproto/oauth-client-browser';
-import { HANDLE_RESOLVER, OAUTH_SCOPE, getPublicAgent, type PublishContext } from '@spool/core';
+import type { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser';
+import { HANDLE_RESOLVER, OAUTH_SCOPE, type PublishContext } from '@spool/core';
 import type { Account } from '@spool/ui';
 import { env } from '$env/dynamic/public';
 
@@ -22,6 +21,8 @@ class SessionState {
 
   async #getClient(): Promise<BrowserOAuthClient> {
     if (this.#client) return this.#client;
+    // Loaded on demand so the composer doesn't wait for the OAuth and API libraries.
+    const { BrowserOAuthClient, buildLoopbackClientId } = await import('@atproto/oauth-client-browser');
     // Local dev uses a loopback client (no hosted metadata needed); deployed
     // builds serve their metadata from /client-metadata.json.
     const clientId = isLoopback(location.hostname)
@@ -47,6 +48,7 @@ class SessionState {
   async #use(session: OAuthSession) {
     this.#session = session;
     const did = session.sub;
+    const [{ Agent }, { getPublicAgent }] = await Promise.all([import('@atproto/api'), import('@spool/core/richtext')]);
     let account: Account = { did, handle: did };
     try {
       const { data } = await getPublicAgent().getProfile({ actor: did });

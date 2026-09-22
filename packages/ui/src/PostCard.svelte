@@ -2,7 +2,7 @@
   import type { DraftImage } from '@spool/core';
   import { POST_GRAPHEME_LIMIT } from '@spool/core';
   import type { Account } from './lib/types.ts';
-  import { blobUrl, hostOf, previewParts } from './lib/preview.ts';
+  import { blobUrl, hostOf, previewParts } from './lib/preview.svelte.ts';
 
   interface Card {
     url: string;

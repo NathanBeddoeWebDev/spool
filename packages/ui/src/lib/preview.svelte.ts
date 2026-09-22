@@ -1,4 +1,4 @@
-import { RichText } from '@atproto/api';
+import type { RichText as RichTextClass } from '@atproto/api';
 import { toDisplayText } from '@spool/core';
 
 export interface PreviewPart {
@@ -6,9 +6,25 @@ export interface PreviewPart {
   kind: 'text' | 'link' | 'mention' | 'tag';
 }
 
+// @atproto/api is large, so it stays out of the bundle that has to load before
+// the user can type. Previews render as plain text until it arrives.
+let RichText = $state.raw<typeof RichTextClass>();
+let loading: Promise<unknown> | undefined;
+
+function loadRichText() {
+  loading ??= import('@atproto/api').then(
+    (m) => (RichText = m.RichText),
+    () => (loading = undefined),
+  );
+}
+
 /** Split post text into styled runs, with links shortened as they'll appear. */
 export function previewParts(text: string): PreviewPart[] {
   const display = toDisplayText(text);
+  if (!RichText) {
+    loadRichText();
+    return [{ text: display.text, kind: 'text' }];
+  }
   const rt = new RichText({ text: display.text });
   rt.detectFacetsWithoutResolution();
   const parts: PreviewPart[] = [];

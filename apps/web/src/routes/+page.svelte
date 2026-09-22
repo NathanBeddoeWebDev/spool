@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { indexedDbDraftStore, localStoragePrefsStore } from '@spool/core/browser';
-  import { Composer, ComposerSkeleton, Icon, Logo } from '@spool/ui';
+  import { Composer, Icon, Logo } from '@spool/ui';
   import { appOrigin, session } from '$lib/session.svelte.ts';
   import SignIn from './SignIn.svelte';
 
@@ -49,18 +49,15 @@
   </header>
 
   <main id="main">
-    {#if session.status === 'loading'}
-      <ComposerSkeleton />
-    {:else}
-      <Composer
-        ctx={session.ctx}
-        account={session.account}
-        {prefsStore}
-        {draftStore}
-        appOrigin={appOrigin()}
-        onRequestSignIn={() => (signInOpen = true)}
-      />
-    {/if}
+    <!-- Not gated on the session: restoring it takes network round trips, and writing doesn't need it. -->
+    <Composer
+      ctx={session.ctx}
+      account={session.account}
+      {prefsStore}
+      {draftStore}
+      appOrigin={appOrigin()}
+      onRequestSignIn={() => session.status !== 'loading' && (signInOpen = true)}
+    />
   </main>
 
   <footer>

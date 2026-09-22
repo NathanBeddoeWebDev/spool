@@ -10,9 +10,6 @@
     extractTitle,
     measure,
     newDraft,
-    publishArticle,
-    publishPost,
-    publishThread,
     splitThread,
     type Draft,
     type DraftStore,
@@ -27,7 +24,7 @@
   import ImageTray from './ImageTray.svelte';
   import PostCard from './PostCard.svelte';
   import PublishSheet from './PublishSheet.svelte';
-  import { wordCount } from './lib/preview.ts';
+  import { wordCount } from './lib/preview.svelte.ts';
   import type { Account, PageContext, SheetState } from './lib/types.ts';
 
   interface Props {
@@ -78,6 +75,13 @@
       await tick();
       textarea?.focus();
     })();
+  });
+
+  // Publishing pulls in @atproto/api, so it isn't loaded up front. Fetch it once
+  // there's a session to publish with, well before the user gets to the button.
+  const loadPublish = () => import('@spool/core/publish');
+  $effect(() => {
+    if (ctx) loadPublish().catch(() => {});
   });
 
   // Autosave: every change to the draft is persisted shortly after typing stops.
@@ -253,6 +257,7 @@
     };
 
     try {
+      const { publishArticle, publishPost, publishThread } = await loadPublish();
       const result =
         kind === 'post'
           ? await publishPost(ctx, snapshot, hooks)

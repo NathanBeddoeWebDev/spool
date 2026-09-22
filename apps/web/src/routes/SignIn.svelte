@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getPublicAgent } from '@spool/core';
   import { Icon } from '@spool/ui';
 
   let {
@@ -30,6 +29,7 @@
     }
     timer = setTimeout(async () => {
       try {
+        const { getPublicAgent } = await import('@spool/core/richtext');
         const { data } = await getPublicAgent().app.bsky.actor.searchActorsTypeahead({ q, limit: 5 });
         suggestions = data.actors.map((a) => ({ handle: a.handle, displayName: a.displayName, avatar: a.avatar }));
       } catch {

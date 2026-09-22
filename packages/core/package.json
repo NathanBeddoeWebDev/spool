@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./browser": "./src/browser.ts",
-    "./markdown": "./src/markdown.ts"
+    "./markdown": "./src/markdown.ts",
+    "./publish": "./src/publish.ts",
+    "./richtext": "./src/richtext.ts"
   },
   "scripts": {
     "test": "vitest run",

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { DraftImage } from '@spool/core';
   import Icon from './Icon.svelte';
+  import { tooltip } from './lib/tooltip.ts';
   import { blobUrl } from './lib/preview.svelte.ts';
 
   let { images = $bindable(), usable, note = '' }: { images: DraftImage[]; usable: number; note?: string } = $props();
@@ -26,8 +27,14 @@
             onclick={() => (editing = editing === img.id ? null : img.id)}
             aria-label="Edit alt text for image {i + 1}">ALT</button
           >
-          <button type="button" class="remove" onclick={() => remove(img.id)} aria-label="Remove image {i + 1}">
-            <Icon name="x" size={14} stroke={2.4} />
+          <button
+            type="button"
+            class="remove"
+            onclick={() => remove(img.id)}
+            aria-label="Remove image {i + 1}"
+            {@attach tooltip('Remove image')}
+          >
+            <Icon name="x" size={14} weight="bold" />
           </button>
         </li>
       {/each}

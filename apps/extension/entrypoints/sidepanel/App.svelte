@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { indexedDbDraftStore } from '@spool/core/browser';
-  import { Composer, ComposerSkeleton, Icon, Logo, type PageContext } from '@spool/ui';
+  import { Composer, ComposerSkeleton, Icon, Logo, tooltip, type PageContext } from '@spool/ui';
   import { currentPage } from '../../lib/page.ts';
   import { syncPrefsStore } from '../../lib/prefs.ts';
   import { SPOOL_ORIGIN, session } from '../../lib/session.svelte.ts';
@@ -64,7 +64,7 @@
         {#if session.account.avatar}
           <img class="avatar" src={session.account.avatar} alt="" title="@{session.account.handle}" />
         {/if}
-        <button class="sp-icon-btn" onclick={() => session.signOut()} aria-label="Sign out" title="Sign out">
+        <button class="sp-icon-btn" onclick={() => session.signOut()} aria-label="Sign out" {@attach tooltip()}>
           <Icon name="logout" size={18} />
         </button>
       {:else if session.status === 'signed-out'}

@@ -22,11 +22,8 @@ export type IconName =
   | 'check'
   | 'external'
   | 'link'
-  | 'plus'
   | 'logout'
-  | 'chevron'
   | 'alert'
-  | 'quote'
   | 'clock';
 
 export type SheetState =

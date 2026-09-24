@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import type { ScheduledPost } from '@spool/core';
   import { indexedDbDraftStore, localStoragePrefsStore } from '@spool/core/browser';
-  import { Composer, Icon, Logo } from '@spool/ui';
+  import { Composer, Icon, Logo, tooltip } from '@spool/ui';
   import { appOrigin, session } from '$lib/session.svelte.ts';
   import Scheduled from './Scheduled.svelte';
   import SignIn from './SignIn.svelte';
@@ -68,7 +68,7 @@
           {#if session.account.avatar}<img src={session.account.avatar} alt="" />{/if}
           <span>@{session.account.handle}</span>
         </span>
-        <button class="sp-icon-btn" onclick={() => session.signOut()} aria-label="Sign out" title="Sign out">
+        <button class="sp-icon-btn" onclick={() => session.signOut()} aria-label="Sign out" {@attach tooltip()}>
           <Icon name="logout" size={18} />
         </button>
       {:else if session.status !== 'loading'}

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ScheduledPost } from '@spool/core';
-  import { Icon, formatWhen, toLocalInput } from '@spool/ui';
+  import { Icon, formatWhen, tooltip, toLocalInput } from '@spool/ui';
   import { session } from '$lib/session.svelte.ts';
 
   let {
@@ -149,7 +149,13 @@
 
 <dialog bind:this={dialog} onclose={() => (open = false)} aria-labelledby="scheduled-title">
   <div class="body">
-    <button type="button" class="sp-icon-btn close" aria-label="Close" onclick={() => (open = false)}>
+    <button
+      type="button"
+      class="sp-icon-btn close"
+      aria-label="Close"
+      {@attach tooltip()}
+      onclick={() => (open = false)}
+    >
       <Icon name="x" />
     </button>
     <h2 id="scheduled-title">Scheduled</h2>

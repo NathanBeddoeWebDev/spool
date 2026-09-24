@@ -22,6 +22,7 @@
   import { prepareImage } from '@spool/core/browser';
   import CountRing from './CountRing.svelte';
   import Icon from './Icon.svelte';
+  import { tooltip } from './lib/tooltip.ts';
   import ImageTray from './ImageTray.svelte';
   import PostCard from './PostCard.svelte';
   import PublishSheet from './PublishSheet.svelte';
@@ -484,7 +485,7 @@
               class="sp-icon-btn"
               onclick={() => fileInput?.click()}
               aria-label="Add images"
-              title="Add images (or paste / drop them)"
+              {@attach tooltip()}
             >
               <Icon name="image" />
             </button>
@@ -506,7 +507,7 @@
               aria-pressed={mode === 'article'}
               onclick={() => setArticle(mode !== 'article')}
               aria-label="Write as an article"
-              title={mode === 'article' ? 'Back to a post' : 'Write as an article'}
+              {@attach tooltip(mode === 'article' ? 'Back to a post' : 'Write as an article')}
             >
               <Icon name="article" />
             </button>
@@ -516,7 +517,7 @@
                 class="sp-icon-btn"
                 onclick={() => pageContext && insertPage(pageContext)}
                 aria-label="Add this page"
-                title="Add this page’s link"
+                {@attach tooltip('Add this page’s link')}
               >
                 <Icon name="link" />
               </button>
@@ -528,6 +529,7 @@
                 aria-expanded={settingsOpen}
                 aria-haspopup="true"
                 aria-label="Posting preferences"
+                {@attach tooltip()}
                 onclick={() => (settingsOpen = !settingsOpen)}
               >
                 <Icon name="settings" />
@@ -586,7 +588,7 @@
                   aria-expanded={scheduleOpen}
                   aria-haspopup="dialog"
                   aria-label="Post later"
-                  title="Post later"
+                  {@attach tooltip()}
                   disabled={!canPublish}
                   onclick={toggleSchedule}
                 >

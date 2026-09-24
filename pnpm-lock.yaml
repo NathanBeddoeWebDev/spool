@@ -159,6 +159,9 @@ importers:
       '@spool/core':
         specifier: workspace:*
         version: link:../core
+      phosphor-svelte:
+        specifier: ^3.1.0
+        version: 3.1.0(svelte@5.57.1)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0))
     devDependencies:
       svelte:
         specifier: ^5.57.1
@@ -1652,6 +1655,15 @@ packages:
 
   perfect-debounce@2.1.0:
     resolution: {integrity: sha512-LjgdTytVFXeUgtHZr9WYViYSM/g8MkcTPYDlPa3cDqMirHjKiSZPYd6DoL7pK8AJQr+uWkQvCjHNdiMqsrJs+g==}
+
+  phosphor-svelte@3.1.0:
+    resolution: {integrity: sha512-nldtxx+XCgNREvrb7O5xgDsefytXpSkPTx8Rnu3f2qQCUZLDV1rLxYSd2Jcwckuo9lZB1qKMqGR17P4UDC0PrA==}
+    peerDependencies:
+      svelte: ^5.0.0 || ^5.0.0-next.96
+      vite: '>=5'
+    peerDependenciesMeta:
+      vite:
+        optional: true
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -3215,6 +3227,14 @@ snapshots:
   pathe@2.0.3: {}
 
   perfect-debounce@2.1.0: {}
+
+  phosphor-svelte@3.1.0(svelte@5.57.1)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)):
+    dependencies:
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+      svelte: 5.57.1
+    optionalDependencies:
+      vite: 8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)
 
   picocolors@1.1.1: {}
 

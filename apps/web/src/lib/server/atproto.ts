@@ -1,3 +1,6 @@
+import { createDidResolver } from '@atproto-labs/did-resolver';
+import { createHandleResolver } from '@atproto-labs/handle-resolver';
+import { extractPdsUrl, isAtprotoDid } from '@atproto/did';
 import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
@@ -7,39 +10,31 @@ const PLC = env.ATPROTO_PLC_URL || 'https://plc.directory';
 
 type Fetch = typeof fetch;
 
-interface DidDoc {
-  service?: Array<{ id: string; type: string; serviceEndpoint: string }>;
-}
+// Both cache in memory: handles for 10 minutes, DID documents for an hour.
+const handleResolver = createHandleResolver({ handleResolver: PUBLIC_APPVIEW });
+const didResolver = createDidResolver({ plcDirectoryUrl: PLC });
 
-const pdsCache = new Map<string, { pds: string; at: number }>();
-const TTL = 10 * 60_000;
-
-export async function resolveActor(actor: string, f: Fetch): Promise<string> {
+export async function resolveActor(actor: string): Promise<string> {
   const decoded = decodeURIComponent(actor);
   if (decoded.startsWith('did:')) return decoded;
-  const res = await f(
-    `${PUBLIC_APPVIEW}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(decoded)}`,
-  );
-  if (!res.ok) error(404, 'Unknown author');
-  return ((await res.json()) as { did: string }).did;
+  const did = await handleResolver.resolve(decoded).catch(() => null);
+  if (!did) error(404, 'Unknown author');
+  return did;
 }
 
-export async function resolvePds(did: string, f: Fetch): Promise<string> {
-  const hit = pdsCache.get(did);
-  if (hit && Date.now() - hit.at < TTL) return hit.pds;
-
-  let docUrl: string;
-  if (did.startsWith('did:plc:')) docUrl = `${PLC}/${did}`;
-  else if (did.startsWith('did:web:')) docUrl = `https://${did.slice('did:web:'.length)}/.well-known/did.json`;
-  else error(400, 'Unsupported DID method');
-
-  const res = await f(docUrl);
-  if (!res.ok) error(404, 'Could not resolve author');
-  const doc = (await res.json()) as DidDoc;
-  const pds = doc.service?.find((s) => s.id.endsWith('#atproto_pds'))?.serviceEndpoint;
-  if (!pds) error(404, 'Author has no PDS');
-  pdsCache.set(did, { pds, at: Date.now() });
-  return pds;
+export async function resolvePds(did: string): Promise<string> {
+  if (!isAtprotoDid(did)) error(400, 'Unsupported DID method');
+  let doc;
+  try {
+    doc = await didResolver.resolve(did);
+  } catch {
+    error(404, 'Could not resolve author');
+  }
+  try {
+    return extractPdsUrl(doc).href.replace(/\/+$/, '');
+  } catch {
+    error(404, 'Author has no PDS');
+  }
 }
 
 export async function getRecord<T>(pds: string, did: string, collection: string, rkey: string, f: Fetch) {

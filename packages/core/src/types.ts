@@ -39,6 +39,12 @@ export interface Draft {
   langs: string[];
   updatedAt: string;
   threadProgress?: ThreadProgress;
+  /**
+   * Record keys reserved before publishing, so a retry writes to the same
+   * keys instead of posting twice. A post uses one; an article uses two
+   * (document, then post). Threads keep theirs in `threadProgress`.
+   */
+  rkeys?: string[];
 }
 
 export interface Prefs {
@@ -81,6 +87,8 @@ export function newDraft(partial: Partial<Draft> = {}): Draft {
   };
 }
 
+export type PublishKind = 'post' | OverflowMode;
+
 export type PublishResult =
   | { kind: 'post'; url: string; uri: string }
   | { kind: 'thread'; url: string; uri: string; count: number }
@@ -90,4 +98,40 @@ export interface PublishProgress {
   step: string;
   done: number;
   total: number;
+}
+
+export interface PublishHooks {
+  onProgress?: (p: PublishProgress) => void;
+  /** Called after every post in a thread so callers can persist resume state. */
+  onThreadProgress?: (p: ThreadProgress) => void | Promise<void>;
+}
+
+export type ScheduleStatus = 'scheduled' | 'publishing' | 'published' | 'failed';
+
+export interface ScheduledPost {
+  id: string;
+  kind: PublishKind;
+  /** ISO time the writer picked. */
+  publishAt: string;
+  /** ISO time of the next attempt, when that's later than publishAt after a failure. */
+  retryAt?: string;
+  status: ScheduleStatus;
+  /** Opening text of the post, or the article's title. */
+  summary: string;
+  /** Posts in a thread; 1 otherwise. */
+  count: number;
+  images: number;
+  /** Last failure. Set on failed posts, and on scheduled ones waiting to retry. */
+  error?: string;
+  result?: PublishResult;
+}
+
+/**
+ * How the composer publishes. The extension publishes straight from the
+ * browser; the web app goes through its server, which can also schedule.
+ */
+export interface Publisher {
+  publish(kind: PublishKind, draft: Draft, hooks?: PublishHooks): Promise<PublishResult>;
+  /** Absent when this client can't schedule. */
+  schedule?(kind: PublishKind, draft: Draft, at: Date): Promise<ScheduledPost>;
 }

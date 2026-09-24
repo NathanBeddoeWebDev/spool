@@ -1,0 +1,12 @@
+// Read only by @sveltejs/adapter-cloudflare, to learn where to write the
+// SvelteKit worker. The Worker that's deployed is configured in
+// wrangler.jsonc; its entry point (worker/index.ts) wraps this output.
+{
+  "name": "spool",
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "compatibility_date": "2026-09-22",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare",
+  },
+}

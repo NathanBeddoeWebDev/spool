@@ -280,6 +280,18 @@ select {
     border-color 0.2s var(--sp-ease),
     box-shadow 0.2s var(--sp-ease);
 }
+/* iOS draws date inputs natively, at a minimum width that ignores the box. */
+.sp-input[type='datetime-local'] {
+  display: block;
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  /* Without native styling, iOS puts the value at the top; centre it. */
+  line-height: 38px;
+}
+.sp-input[type='datetime-local']::-webkit-date-and-time-value {
+  text-align: left;
+}
 .sp-input:focus {
   outline: none;
   border-color: var(--sp-accent);

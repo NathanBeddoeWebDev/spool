@@ -6,3 +6,6 @@ allowBuilds:
   core-js: false
   esbuild: true
   workerd: true
+patchedDependencies:
+  '@atproto-labs/did-resolver@0.3.9': patches/@atproto-labs__did-resolver@0.3.9.patch
+  '@atproto-labs/handle-resolver@0.4.9': patches/@atproto-labs__handle-resolver@0.4.9.patch

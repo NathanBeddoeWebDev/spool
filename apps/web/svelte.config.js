@@ -5,6 +5,10 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 export default {
   preprocess: vitePreprocess(),
   kit: {
-    adapter: adapter(),
+    adapter: adapter({
+      config: 'svelte.wrangler.jsonc',
+      // Bindings for `vite dev` come from the real Worker config.
+      platformProxy: { configPath: 'wrangler.jsonc' },
+    }),
   },
 };

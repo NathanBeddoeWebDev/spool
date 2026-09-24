@@ -1,8 +1,20 @@
 import type { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser';
-import { HANDLE_RESOLVER, OAUTH_SCOPE, type PublishContext } from '@spool/core';
+import { HANDLE_RESOLVER, OAUTH_SCOPE, type PublishContext, type Publisher } from '@spool/core';
 import type { Account } from '@spool/ui';
 
 export const SPOOL_ORIGIN = (import.meta.env.WXT_SPOOL_ORIGIN ?? '').replace(/\/+$/, '');
+
+// Publishing pulls in @atproto/api, so it isn't loaded up front.
+const loadPublish = () => import('@spool/core/publish');
+
+/** Publishes straight from the panel. The extension can't schedule: that needs the web app's server. */
+function directPublisher(ctx: PublishContext): Publisher {
+  // Fetch it now there's a session, well before the user gets to the button.
+  loadPublish().catch(() => {});
+  return {
+    publish: async (kind, draft, hooks) => (await loadPublish()).publishDraft(ctx, kind, draft, hooks),
+  };
+}
 
 /**
  * OAuth for the extension. The client metadata lives on the web app
@@ -13,7 +25,7 @@ export const SPOOL_ORIGIN = (import.meta.env.WXT_SPOOL_ORIGIN ?? '').replace(/\/
 class ExtensionSession {
   status = $state<'loading' | 'signed-out' | 'signed-in' | 'unconfigured'>('loading');
   account = $state<Account | null>(null);
-  ctx = $state.raw<PublishContext | null>(null);
+  publisher = $state.raw<Publisher | null>(null);
   error = $state('');
   #client: BrowserOAuthClient | null = null;
   #session: OAuthSession | null = null;
@@ -74,13 +86,13 @@ class ExtensionSession {
       // Not indexed yet; publishing only needs the DID.
     }
     this.account = account;
-    this.ctx = {
+    this.publisher = directPublisher({
       agent: new Agent(session),
       did,
       handle: account.handle,
       displayName: account.displayName,
       appOrigin: SPOOL_ORIGIN,
-    };
+    });
     this.status = 'signed-in';
   }
 
@@ -89,7 +101,7 @@ class ExtensionSession {
       await this.#session?.signOut();
     } finally {
       this.#session = null;
-      this.ctx = null;
+      this.publisher = null;
       this.account = null;
       this.status = 'signed-out';
     }

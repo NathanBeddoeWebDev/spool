@@ -6,6 +6,7 @@ export * from './text.ts';
 export * from './split.ts';
 export * from './records.ts';
 export type { BuiltText } from './richtext.ts';
-export type { Publication, PublishContext, PublishHooks } from './publish.ts';
+export type { Publication, PublishContext } from './publish.ts';
 export { excerpt, extractTitle, markdownToText } from './markdown.ts';
 export * from './oauth.ts';
+export * from './transport.ts';

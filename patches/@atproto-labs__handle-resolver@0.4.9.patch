@@ -1,0 +1,26 @@
+diff --git a/dist/internal-resolvers/well-known-handler-resolver.js b/dist/internal-resolvers/well-known-handler-resolver.js
+index 239bb8fa2ef19f465fd2b968c1e3ffe16c27fb5b..877dfb65e51fafe5ed6d6d1439959fa1229940d6 100644
+--- a/dist/internal-resolvers/well-known-handler-resolver.js
++++ b/dist/internal-resolvers/well-known-handler-resolver.js
+@@ -11,7 +11,7 @@ export class WellKnownHandleResolver {
+             const response = await this.fetch.call(null, url, {
+                 cache: options?.noCache ? 'no-cache' : undefined,
+                 signal: options?.signal,
+-                redirect: 'error',
++                redirect: 'manual', // Patched: Cloudflare Workers reject 'error'. Non-2xx responses are rejected below.
+             });
+             // A non-2xx response (e.g. 5xx upstream, 4xx misconfigured endpoint) is
+             // not a resolution success, but fetch() does not throw on it. Route it
+diff --git a/dist/xrpc-handle-resolver.js b/dist/xrpc-handle-resolver.js
+index ebce885fa495551143c7401d7b094411a15f2883..eee7a2bdb585a1f907cceafafa8d6ac964392a06 100644
+--- a/dist/xrpc-handle-resolver.js
++++ b/dist/xrpc-handle-resolver.js
+@@ -16,7 +16,7 @@ export class XrpcHandleResolver {
+         const response = await this.fetch.call(null, url, {
+             cache: options?.noCache ? 'no-cache' : undefined,
+             signal: options?.signal,
+-            redirect: 'error',
++            redirect: 'manual', // Patched: Cloudflare Workers reject 'error'. Non-2xx responses are rejected below.
+         });
+         const payload = await response.json();
+         // The response should either be

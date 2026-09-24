@@ -20,6 +20,6 @@ export function GET({ url }) {
       clientUri: url.origin,
       redirectUris,
     }),
-    { headers: { 'cache-control': 'public, max-age=600' } },
+    { headers: { 'cache-control': 'no-cache' } },
   );
 }

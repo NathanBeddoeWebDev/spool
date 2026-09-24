@@ -4,6 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@atproto-labs/did-resolver@0.3.9': 1c0051d9434402c7a986df731d562da5b4137dbc8b343e6e1bb3355140d589f5
+  '@atproto-labs/handle-resolver@0.4.9': aaf886053e593ae91d65ca3fded66d01defe14d02c242f21bf8fe6c89d526b54
+
 importers:
 
   .:
@@ -63,12 +67,24 @@ importers:
 
   apps/web:
     dependencies:
+      '@atproto-labs/did-resolver':
+        specifier: 0.3.9
+        version: 0.3.9(patch_hash=1c0051d9434402c7a986df731d562da5b4137dbc8b343e6e1bb3355140d589f5)
+      '@atproto-labs/handle-resolver':
+        specifier: 0.4.9
+        version: 0.4.9(patch_hash=aaf886053e593ae91d65ca3fded66d01defe14d02c242f21bf8fe6c89d526b54)
       '@atproto/api':
         specifier: ^0.20.44
         version: 0.20.44
-      '@atproto/oauth-client-browser':
-        specifier: ^0.5.7
-        version: 0.5.7
+      '@atproto/did':
+        specifier: ^0.5.5
+        version: 0.5.5
+      '@atproto/jwk-jose':
+        specifier: ^0.2.4
+        version: 0.2.4
+      '@atproto/oauth-client':
+        specifier: ^0.8.7
+        version: 0.8.7
       '@fontsource-variable/geist':
         specifier: ^5.3.0
         version: 5.3.0
@@ -85,9 +101,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
     devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260702.1
+        version: 4.20260702.1
       '@sveltejs/adapter-cloudflare':
         specifier: ^7.2.9
-        version: 7.2.9(@sveltejs/kit@2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.1)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.57.1)(typescript@5.9.3)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(wrangler@4.136.1(@types/node@22.20.4))
+        version: 7.2.9(@sveltejs/kit@2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.1)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.57.1)(typescript@5.9.3)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(wrangler@4.136.1(@cloudflare/workers-types@4.20260702.1)(@types/node@22.20.4))
       '@sveltejs/kit':
         specifier: ^2.70.3
         version: 2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.1)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.57.1)(typescript@5.9.3)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0))
@@ -108,7 +127,7 @@ importers:
         version: 8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)
       wrangler:
         specifier: ^4.136.1
-        version: 4.136.1(@types/node@22.20.4)
+        version: 4.136.1(@cloudflare/workers-types@4.20260702.1)(@types/node@22.20.4)
 
   packages/core:
     dependencies:
@@ -2068,7 +2087,7 @@ snapshots:
 
   '@aklinker1/zero-zip@1.0.1': {}
 
-  '@atproto-labs/did-resolver@0.3.9':
+  '@atproto-labs/did-resolver@0.3.9(patch_hash=1c0051d9434402c7a986df731d562da5b4137dbc8b343e6e1bb3355140d589f5)':
     dependencies:
       '@atproto-labs/fetch': 0.3.6
       '@atproto-labs/pipe': 0.2.4
@@ -2081,7 +2100,7 @@ snapshots:
     dependencies:
       '@atproto-labs/pipe': 0.2.4
 
-  '@atproto-labs/handle-resolver@0.4.9':
+  '@atproto-labs/handle-resolver@0.4.9(patch_hash=aaf886053e593ae91d65ca3fded66d01defe14d02c242f21bf8fe6c89d526b54)':
     dependencies:
       '@atproto-labs/simple-store': 0.5.1
       '@atproto-labs/simple-store-memory': 0.2.6
@@ -2090,8 +2109,8 @@ snapshots:
 
   '@atproto-labs/identity-resolver@0.4.9':
     dependencies:
-      '@atproto-labs/did-resolver': 0.3.9
-      '@atproto-labs/handle-resolver': 0.4.9
+      '@atproto-labs/did-resolver': 0.3.9(patch_hash=1c0051d9434402c7a986df731d562da5b4137dbc8b343e6e1bb3355140d589f5)
+      '@atproto-labs/handle-resolver': 0.4.9(patch_hash=aaf886053e593ae91d65ca3fded66d01defe14d02c242f21bf8fe6c89d526b54)
 
   '@atproto-labs/pipe@0.2.4': {}
 
@@ -2160,8 +2179,8 @@ snapshots:
 
   '@atproto/oauth-client-browser@0.5.7':
     dependencies:
-      '@atproto-labs/did-resolver': 0.3.9
-      '@atproto-labs/handle-resolver': 0.4.9
+      '@atproto-labs/did-resolver': 0.3.9(patch_hash=1c0051d9434402c7a986df731d562da5b4137dbc8b343e6e1bb3355140d589f5)
+      '@atproto-labs/handle-resolver': 0.4.9(patch_hash=aaf886053e593ae91d65ca3fded66d01defe14d02c242f21bf8fe6c89d526b54)
       '@atproto-labs/simple-store': 0.5.1
       '@atproto/did': 0.5.5
       '@atproto/jwk': 0.7.4
@@ -2172,9 +2191,9 @@ snapshots:
 
   '@atproto/oauth-client@0.8.7':
     dependencies:
-      '@atproto-labs/did-resolver': 0.3.9
+      '@atproto-labs/did-resolver': 0.3.9(patch_hash=1c0051d9434402c7a986df731d562da5b4137dbc8b343e6e1bb3355140d589f5)
       '@atproto-labs/fetch': 0.3.6
-      '@atproto-labs/handle-resolver': 0.4.9
+      '@atproto-labs/handle-resolver': 0.4.9(patch_hash=aaf886053e593ae91d65ca3fded66d01defe14d02c242f21bf8fe6c89d526b54)
       '@atproto-labs/identity-resolver': 0.4.9
       '@atproto-labs/simple-store': 0.5.1
       '@atproto-labs/simple-store-memory': 0.2.6
@@ -2650,12 +2669,12 @@ snapshots:
     dependencies:
       acorn: 8.18.0
 
-  '@sveltejs/adapter-cloudflare@7.2.9(@sveltejs/kit@2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.1)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.57.1)(typescript@5.9.3)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(wrangler@4.136.1(@types/node@22.20.4))':
+  '@sveltejs/adapter-cloudflare@7.2.9(@sveltejs/kit@2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.1)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.57.1)(typescript@5.9.3)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(wrangler@4.136.1(@cloudflare/workers-types@4.20260702.1)(@types/node@22.20.4))':
     dependencies:
       '@cloudflare/workers-types': 4.20260702.1
       '@sveltejs/kit': 2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.1)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.57.1)(typescript@5.9.3)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0))
       worktop: 0.8.0-next.18
-      wrangler: 4.136.1(@types/node@22.20.4)
+      wrangler: 4.136.1(@cloudflare/workers-types@4.20260702.1)(@types/node@22.20.4)
 
   '@sveltejs/kit@2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.1)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.57.1)(typescript@5.9.3)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.1)(jiti@2.7.0))':
     dependencies:
@@ -3514,7 +3533,7 @@ snapshots:
       mrmime: 2.0.1
       regexparam: 3.0.0
 
-  wrangler@4.136.1(@types/node@22.20.4):
+  wrangler@4.136.1(@cloudflare/workers-types@4.20260702.1)(@types/node@22.20.4):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20260921.1)
@@ -3525,6 +3544,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20260921.1
     optionalDependencies:
+      '@cloudflare/workers-types': 4.20260702.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - '@types/node'

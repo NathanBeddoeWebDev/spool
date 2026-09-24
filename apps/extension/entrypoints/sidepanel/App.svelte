@@ -109,7 +109,7 @@
       <ComposerSkeleton />
     {:else}
       <Composer
-        ctx={session.ctx}
+        publisher={session.publisher}
         account={session.account}
         {prefsStore}
         {draftStore}

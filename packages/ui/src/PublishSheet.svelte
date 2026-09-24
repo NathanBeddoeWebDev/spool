@@ -1,17 +1,20 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import type { SheetState } from './lib/types.ts';
+  import { formatWhen } from './lib/when.ts';
 
   let {
     state,
     onretry,
     ondismiss,
     onnew,
+    onshowscheduled,
   }: {
     state: SheetState;
     onretry: () => void;
     ondismiss: () => void;
     onnew: () => void;
+    onshowscheduled?: () => void;
   } = $props();
 
   const pct = $derived(
@@ -49,6 +52,22 @@
           <a class="sp-btn sp-btn-primary" href={state.result.url} target="_blank" rel="noopener">
             Open on Bluesky <Icon name="external" size={16} />
           </a>
+        {/if}
+        <button type="button" class="sp-link" onclick={onnew}>Write another</button>
+      </div>
+    {:else if state.kind === 'scheduled'}
+      <div class="badge ok"><Icon name="clock" size={26} stroke={2.2} /></div>
+      <p class="title">
+        {state.post.kind === 'article'
+          ? 'Article scheduled'
+          : state.post.kind === 'thread'
+            ? 'Thread scheduled'
+            : 'Scheduled'}
+      </p>
+      <p class="detail">Goes out {formatWhen(state.post.publishAt)}. You can close this tab.</p>
+      <div class="actions">
+        {#if onshowscheduled}
+          <button type="button" class="sp-btn sp-btn-primary" onclick={onshowscheduled}>See scheduled</button>
         {/if}
         <button type="button" class="sp-link" onclick={onnew}>Write another</button>
       </div>

@@ -1,7 +1,10 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "spool",
-  "main": ".svelte-kit/cloudflare/_worker.js",
+  // Wraps the SvelteKit worker and adds the cron handler that publishes
+  // scheduled posts. SvelteKit's own output location is set in
+  // svelte.wrangler.jsonc, which only the adapter reads.
+  "main": "worker/index.ts",
   "compatibility_date": "2026-09-22",
   "assets": {
     "binding": "ASSETS",
@@ -9,10 +12,30 @@
   },
   "routes": [{ "pattern": "spool.at", "custom_domain": true }],
   "observability": { "enabled": true },
+  "triggers": {
+    // Every minute: publish whatever is due.
+    "crons": ["* * * * *"],
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "spool",
+      "database_id": "78e9cc1b-1139-48ce-a77d-7908acf3e2e5",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [
+    {
+      // Images of scheduled drafts, deleted once they're published.
+      "binding": "IMAGES",
+      "bucket_name": "spool-scheduled-images",
+    },
+  ],
   "vars": {
     // Written permanently into published article records and link posts.
     "PUBLIC_APP_ORIGIN": "https://spool.at",
     // Add once the extension ID is pinned (comma separated):
     // "PUBLIC_EXTENSION_REDIRECT_URIS": "https://<extension-id>.chromiumapp.org/"
   },
+  // Secrets (wrangler secret put): OAUTH_PRIVATE_KEY
 }

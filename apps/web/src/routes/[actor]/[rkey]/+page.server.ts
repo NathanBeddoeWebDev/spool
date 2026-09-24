@@ -23,8 +23,8 @@ function paragraphs(text: string) {
 
 export async function load({ params, fetch, setHeaders }) {
   if (!/^[a-zA-Z0-9._~:-]{1,512}$/.test(params.rkey)) error(404, 'Not found');
-  const did = await resolveActor(params.actor, fetch);
-  const pds = await resolvePds(did, fetch);
+  const did = await resolveActor(params.actor);
+  const pds = await resolvePds(did);
   const [record, author] = await Promise.all([
     getRecord<DocumentValue>(pds, did, 'site.standard.document', params.rkey, fetch),
     getProfile(did, fetch),

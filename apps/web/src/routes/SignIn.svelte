@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Icon } from '@spool/ui';
+  import { Icon, tooltip } from '@spool/ui';
 
   let {
     open = $bindable(false),
@@ -70,7 +70,13 @@
       submit();
     }}
   >
-    <button type="button" class="sp-icon-btn close" aria-label="Close" onclick={() => (open = false)}>
+    <button
+      type="button"
+      class="sp-icon-btn close"
+      aria-label="Close"
+      {@attach tooltip()}
+      onclick={() => (open = false)}
+    >
       <Icon name="x" />
     </button>
     <h2 id="signin-title">Sign in to post</h2>

@@ -4,3 +4,5 @@ export { default as Logo } from './Logo.svelte';
 export { default as Icon } from './Icon.svelte';
 export type { Account, PageContext } from './lib/types.ts';
 export { default as ComposerSkeleton } from './ComposerSkeleton.svelte';
+export { formatWhen, toLocalInput } from './lib/when.ts';
+export { tooltip } from './lib/tooltip.ts';

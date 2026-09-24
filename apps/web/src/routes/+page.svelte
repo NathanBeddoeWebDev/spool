@@ -1,17 +1,36 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import type { ScheduledPost } from '@spool/core';
   import { indexedDbDraftStore, localStoragePrefsStore } from '@spool/core/browser';
-  import { Composer, Icon, Logo } from '@spool/ui';
+  import { Composer, Icon, Logo, tooltip } from '@spool/ui';
   import { appOrigin, session } from '$lib/session.svelte.ts';
+  import Scheduled from './Scheduled.svelte';
   import SignIn from './SignIn.svelte';
 
   const prefsStore = localStoragePrefsStore();
   const draftStore = indexedDbDraftStore();
   let signInOpen = $state(false);
+  let scheduledOpen = $state(false);
+  let composer = $state<ReturnType<typeof Composer>>();
+
+  const waiting = $derived(session.scheduled.filter((p) => p.status !== 'published').length);
+  const needsAttention = $derived(session.scheduled.some((p) => p.status === 'failed'));
 
   onMount(() => {
-    session.init();
+    session.init().then(() => {
+      // Coming back from a failed sign-in: show why.
+      if (session.error && session.status === 'signed-out') signInOpen = true;
+    });
   });
+
+  async function edit(post: ScheduledPost) {
+    if (composer && !composer.isEmpty() && !confirm('Replace the draft you’re writing with this scheduled one?')) {
+      return;
+    }
+    const draft = await session.unschedule(post.id, true);
+    composer?.replaceDraft(draft);
+    scheduledOpen = false;
+  }
 </script>
 
 <svelte:head>
@@ -35,11 +54,21 @@
     <Logo />
     <div class="account">
       {#if session.status === 'signed-in' && session.account}
+        <button
+          class="sp-btn sp-btn-ghost scheduled"
+          class:attention={needsAttention}
+          onclick={() => (scheduledOpen = true)}
+          aria-label={needsAttention ? 'Scheduled posts (one needs attention)' : 'Scheduled posts'}
+        >
+          <Icon name="clock" size={18} />
+          <span class="label">Scheduled</span>
+          {#if waiting}<span class="count">{waiting}</span>{/if}
+        </button>
         <span class="me">
           {#if session.account.avatar}<img src={session.account.avatar} alt="" />{/if}
           <span>@{session.account.handle}</span>
         </span>
-        <button class="sp-icon-btn" onclick={() => session.signOut()} aria-label="Sign out" title="Sign out">
+        <button class="sp-icon-btn" onclick={() => session.signOut()} aria-label="Sign out" {@attach tooltip()}>
           <Icon name="logout" size={18} />
         </button>
       {:else if session.status !== 'loading'}
@@ -51,12 +80,14 @@
   <main id="main">
     <!-- Not gated on the session: restoring it takes network round trips, and writing doesn't need it. -->
     <Composer
-      ctx={session.ctx}
+      bind:this={composer}
+      publisher={session.status === 'signed-in' ? session.publisher : null}
       account={session.account}
       {prefsStore}
       {draftStore}
       appOrigin={appOrigin()}
       onRequestSignIn={() => session.status !== 'loading' && (signInOpen = true)}
+      onShowScheduled={() => (scheduledOpen = true)}
     />
   </main>
 
@@ -71,6 +102,9 @@
 </div>
 
 <SignIn bind:open={signInOpen} onsubmit={(h) => session.signIn(h)} error={session.error} />
+{#if session.status === 'signed-in'}
+  <Scheduled bind:open={scheduledOpen} onedit={edit} />
+{/if}
 
 <style>
   .page {
@@ -99,6 +133,25 @@
     font-size: 14px;
     color: var(--sp-ink-2);
   }
+  .scheduled {
+    gap: 6px;
+    height: 34px;
+    padding: 0 10px;
+    font-size: 14px;
+  }
+  .scheduled .count {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--sp-sunken);
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .scheduled.attention .count {
+    background: var(--sp-danger);
+    color: #fff;
+  }
   .me img {
     width: 28px;
     height: 28px;
@@ -124,7 +177,8 @@
     .page {
       padding: 0 14px;
     }
-    .me span {
+    .me span,
+    .scheduled .label {
       display: none;
     }
   }

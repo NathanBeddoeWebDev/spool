@@ -1,17 +1,20 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import type { SheetState } from './lib/types.ts';
+  import { formatWhen } from './lib/when.ts';
 
   let {
     state,
     onretry,
     ondismiss,
     onnew,
+    onshowscheduled,
   }: {
     state: SheetState;
     onretry: () => void;
     ondismiss: () => void;
     onnew: () => void;
+    onshowscheduled?: () => void;
   } = $props();
 
   const pct = $derived(
@@ -35,7 +38,7 @@
       <p class="title">{state.progress.step}</p>
       <div class="bar"><span style:transform="scaleX({pct / 100})"></span></div>
     {:else if state.kind === 'done'}
-      <div class="badge ok"><Icon name="check" size={26} stroke={2.4} /></div>
+      <div class="badge ok"><Icon name="check" size={26} weight="bold" /></div>
       <p class="title">{doneTitle}</p>
       <div class="actions">
         {#if state.result.kind === 'article'}
@@ -52,8 +55,24 @@
         {/if}
         <button type="button" class="sp-link" onclick={onnew}>Write another</button>
       </div>
+    {:else if state.kind === 'scheduled'}
+      <div class="badge ok"><Icon name="clock" size={26} weight="bold" /></div>
+      <p class="title">
+        {state.post.kind === 'article'
+          ? 'Article scheduled'
+          : state.post.kind === 'thread'
+            ? 'Thread scheduled'
+            : 'Scheduled'}
+      </p>
+      <p class="detail">Goes out {formatWhen(state.post.publishAt)}. You can close this tab.</p>
+      <div class="actions">
+        {#if onshowscheduled}
+          <button type="button" class="sp-btn sp-btn-primary" onclick={onshowscheduled}>See scheduled</button>
+        {/if}
+        <button type="button" class="sp-link" onclick={onnew}>Write another</button>
+      </div>
     {:else}
-      <div class="badge err"><Icon name="alert" size={24} stroke={2} /></div>
+      <div class="badge err"><Icon name="alert" size={24} weight="bold" /></div>
       <p class="title">
         {#if state.partial}
           {state.partial.done} of {state.partial.total} posts went out

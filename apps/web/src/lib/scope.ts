@@ -7,6 +7,8 @@ export function clientMetadata(opts: {
   clientName: string;
   clientUri: string;
   redirectUris: string[];
+  /** Makes this a confidential client that signs its token requests with these keys. */
+  jwksUri?: string;
 }) {
   return {
     client_id: opts.clientId,
@@ -18,7 +20,13 @@ export function clientMetadata(opts: {
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
     application_type: 'web',
-    token_endpoint_auth_method: 'none',
     dpop_bound_access_tokens: true,
+    ...(opts.jwksUri
+      ? {
+          token_endpoint_auth_method: 'private_key_jwt',
+          token_endpoint_auth_signing_alg: 'ES256',
+          jwks_uri: opts.jwksUri,
+        }
+      : { token_endpoint_auth_method: 'none' }),
   };
 }

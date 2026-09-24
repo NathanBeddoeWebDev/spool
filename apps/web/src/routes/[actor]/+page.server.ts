@@ -11,8 +11,8 @@ import {
 
 /** A writer's publication on this site: every article they published with Spool. */
 export async function load({ params, fetch, url, setHeaders }) {
-  const did = await resolveActor(params.actor, fetch);
-  const pds = await resolvePds(did, fetch);
+  const did = await resolveActor(params.actor);
+  const pds = await resolvePds(did);
   const origin = (env.PUBLIC_APP_ORIGIN || url.origin).replace(/\/+$/, '');
   const pubUrl = `${origin}/${did}`;
 

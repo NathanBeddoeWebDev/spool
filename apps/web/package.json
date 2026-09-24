@@ -6,13 +6,19 @@
   "scripts": {
     "dev": "vite dev --host 127.0.0.1 --port 5173",
     "build": "vite build",
-    "preview": "vite build && wrangler dev --ip 127.0.0.1 --port 4173",
+    "preview": "vite build && wrangler dev --ip 127.0.0.1 --port 4173 --local-upstream 127.0.0.1:4173 --test-scheduled",
     "deploy": "vite build && wrangler deploy",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "db:migrate:local": "wrangler d1 migrations apply spool --local",
+    "db:migrate": "wrangler d1 migrations apply spool --remote"
   },
   "dependencies": {
+    "@atproto-labs/did-resolver": "0.3.9",
+    "@atproto-labs/handle-resolver": "0.4.9",
     "@atproto/api": "^0.20.44",
-    "@atproto/oauth-client-browser": "^0.5.7",
+    "@atproto/did": "^0.5.5",
+    "@atproto/jwk-jose": "^0.2.4",
+    "@atproto/oauth-client": "^0.8.7",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@fontsource-variable/newsreader": "^5.3.0",
@@ -20,6 +26,7 @@
     "@spool/ui": "workspace:*"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@sveltejs/adapter-cloudflare": "^7.2.9",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",

@@ -11,13 +11,13 @@
   <nav><a href="/" aria-label="Back to the composer"><Logo size={24} /></a></nav>
   <main id="main">
     <h1>Privacy</h1>
-    <p class="dek">Spool has no database and no accounts of its own. Here is everything it touches.</p>
+    <p class="dek">Spool has no accounts of its own. Here is everything it touches.</p>
 
     <h2>In your browser</h2>
     <p>
       Your draft, including images, is saved in this browser’s IndexedDB so it survives a reload or a sign-in redirect.
-      Your posting preferences are saved in local storage, or your browser’s synced storage in the extension. Sign-in
-      keys are created in your browser and never leave it.
+      Your posting preferences are saved in local storage, or your browser’s synced storage in the extension. In the
+      extension, sign-in keys are created in your browser and never leave it.
     </p>
 
     <h2>On your PDS</h2>
@@ -28,9 +28,18 @@
 
     <h2>On this server</h2>
     <p>
+      When you sign in on the web, Spool keeps your sign-in tokens on its server, so it can publish for you, including
+      posts you’ve scheduled while your browser is closed. Your browser gets a cookie that only identifies that sign-in.
+      Signing out deletes it, and revokes Spool’s access to your account unless posts are still waiting to go out.
+    </p>
+    <p>
+      A scheduled post is stored on the server, images included, until it’s published. Cancel it and it’s deleted. Once
+      it’s out, the images are deleted, and the entry in your list is removed a week later.
+    </p>
+    <p>
       Article pages are fetched from the author’s PDS when someone reads them and cached briefly. Spool’s code keeps no
-      reading logs, sets no cookies and runs no analytics. Whoever hosts this copy of Spool may still keep ordinary
-      server logs.
+      reading logs, sets no cookies on readers and runs no analytics. Whoever hosts this copy of Spool may still keep
+      ordinary server logs.
     </p>
 
     <h2>Sign-in permissions</h2>

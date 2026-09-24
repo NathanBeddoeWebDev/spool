@@ -1,4 +1,4 @@
-import type { PublishProgress, PublishResult } from '@spool/core';
+import type { PublishProgress, PublishResult, ScheduledPost } from '@spool/core';
 
 export interface Account {
   did: string;
@@ -22,13 +22,12 @@ export type IconName =
   | 'check'
   | 'external'
   | 'link'
-  | 'plus'
   | 'logout'
-  | 'chevron'
   | 'alert'
-  | 'quote';
+  | 'clock';
 
 export type SheetState =
   | { kind: 'publishing'; progress: PublishProgress }
   | { kind: 'done'; result: PublishResult }
+  | { kind: 'scheduled'; post: ScheduledPost }
   | { kind: 'error'; message: string; partial?: { done: number; total: number } };

@@ -16,20 +16,23 @@
     type OverflowMode,
     type Prefs,
     type PrefsStore,
-    type PublishContext,
+    type PublishKind,
+    type Publisher,
   } from '@spool/core';
   import { prepareImage } from '@spool/core/browser';
   import CountRing from './CountRing.svelte';
   import Icon from './Icon.svelte';
+  import { tooltip } from './lib/tooltip.ts';
   import ImageTray from './ImageTray.svelte';
   import PostCard from './PostCard.svelte';
   import PublishSheet from './PublishSheet.svelte';
   import { wordCount } from './lib/preview.svelte.ts';
   import type { Account, PageContext, SheetState } from './lib/types.ts';
+  import { formatWhen, toLocalInput } from './lib/when.ts';
 
   interface Props {
     /** Null when signed out: writing works, publishing asks to sign in. */
-    ctx: PublishContext | null;
+    publisher: Publisher | null;
     account: Account | null;
     prefsStore: PrefsStore;
     draftStore: DraftStore;
@@ -38,9 +41,20 @@
     onRequestSignIn: () => void;
     /** Extension only: the page the user was on. */
     pageContext?: PageContext | null;
+    /** Opens the list of scheduled posts, where the app has one. */
+    onShowScheduled?: () => void;
   }
 
-  let { ctx, account, prefsStore, draftStore, appOrigin, onRequestSignIn, pageContext = null }: Props = $props();
+  let {
+    publisher,
+    account,
+    prefsStore,
+    draftStore,
+    appOrigin,
+    onRequestSignIn,
+    pageContext = null,
+    onShowScheduled,
+  }: Props = $props();
 
   const MAX_THREAD_IMAGES = 40;
 
@@ -56,6 +70,12 @@
   let textarea = $state<HTMLTextAreaElement>();
   let fileInput = $state<HTMLInputElement>();
   let settingsEl = $state<HTMLElement>();
+  let scheduleOpen = $state(false);
+  let scheduleEl = $state<HTMLElement>();
+  let scheduleAt = $state('');
+  let scheduleError = $state('');
+  /** What the error sheet's retry button should repeat. */
+  let lastAttempt: { action: 'publish' } | { action: 'schedule'; at: Date } = { action: 'publish' };
 
   function defaultLangs(): string[] {
     const lang = typeof navigator !== 'undefined' ? navigator.language?.split('-')[0] : undefined;
@@ -75,13 +95,6 @@
       await tick();
       textarea?.focus();
     })();
-  });
-
-  // Publishing pulls in @atproto/api, so it isn't loaded up front. Fetch it once
-  // there's a session to publish with, well before the user gets to the button.
-  const loadPublish = () => import('@spool/core/publish');
-  $effect(() => {
-    if (ctx) loadPublish().catch(() => {});
   });
 
   // Autosave: every change to the draft is persisted shortly after typing stops.
@@ -136,7 +149,7 @@
   );
 
   const publishLabel = $derived.by(() => {
-    if (!ctx) return 'Sign in to post';
+    if (!publisher) return 'Sign in to post';
     if (partial) return 'Finish thread';
     if (mode === 'thread') return `Post thread · ${threadCount}`;
     if (mode === 'article') return 'Publish article';
@@ -231,19 +244,34 @@
     return msg || 'Something went wrong.';
   }
 
+  /** Snapshot of the draft to send, and what to send it as. */
+  async function prepare(): Promise<{ kind: PublishKind; snapshot: Draft }> {
+    if (asking) await choose(preferred);
+    const kind = partial ? 'thread' : mode;
+    const snapshot = $state.snapshot(draft) as Draft;
+    if (!snapshot.langs.length) snapshot.langs = defaultLangs();
+    return { kind, snapshot };
+  }
+
+  /** The draft is out of our hands: start a fresh one. */
+  async function finish(next: SheetState) {
+    // Stop any pending autosave from resurrecting the sent draft.
+    clearTimeout(saveTimer);
+    await draftStore.clear();
+    draft = freshDraft();
+    sheet = next;
+  }
+
   async function publish() {
-    if (!ctx) {
+    if (!publisher) {
       await draftStore.save($state.snapshot(draft) as Draft);
       onRequestSignIn();
       return;
     }
     if (sheet?.kind === 'publishing') return;
     if (!canPublish && !partial) return;
-    if (asking) await choose(preferred);
-
-    const kind = partial ? 'thread' : mode;
-    const snapshot = $state.snapshot(draft) as Draft;
-    if (!snapshot.langs.length) snapshot.langs = defaultLangs();
+    lastAttempt = { action: 'publish' };
+    const { kind, snapshot } = await prepare();
     sheet = { kind: 'publishing', progress: { step: 'Starting', done: 0, total: 1 } };
 
     const hooks = {
@@ -257,21 +285,84 @@
     };
 
     try {
-      const { publishArticle, publishPost, publishThread } = await loadPublish();
-      const result =
-        kind === 'post'
-          ? await publishPost(ctx, snapshot, hooks)
-          : kind === 'thread'
-            ? await publishThread(ctx, snapshot, hooks)
-            : await publishArticle(ctx, snapshot, hooks);
-      // Stop any pending autosave from resurrecting the published draft.
-      clearTimeout(saveTimer);
-      await draftStore.clear();
-      draft = freshDraft();
-      sheet = { kind: 'done', result };
+      await finish({ kind: 'done', result: await publisher.publish(kind, snapshot, hooks) });
     } catch (err) {
       sheet = { kind: 'error', message: describeError(err), partial: partial ?? undefined };
     }
+  }
+
+  const canSchedule = $derived(!!publisher?.schedule && !partial);
+
+  /** Quick picks: an hour from now, and 9am on the next two mornings worth offering. */
+  const quickTimes = $derived.by(() => {
+    if (!scheduleOpen) return [];
+    const now = new Date();
+    const inAnHour = new Date(now.getTime() + 60 * 60_000);
+    inAnHour.setMinutes(Math.ceil(inAnHour.getMinutes() / 5) * 5, 0, 0);
+    const morning = (days: number) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() + days);
+      d.setHours(9, 0, 0, 0);
+      return d;
+    };
+    const tomorrow = morning(1);
+    // Monday, unless that's tomorrow anyway.
+    const monday = morning((8 - now.getDay()) % 7 || 7);
+    return [
+      { label: 'In an hour', at: inAnHour },
+      { label: 'Tomorrow morning', at: tomorrow },
+      ...(monday.getTime() !== tomorrow.getTime() ? [{ label: 'Monday morning', at: monday }] : []),
+    ];
+  });
+
+  const scheduleDate = $derived(scheduleAt ? new Date(scheduleAt) : null);
+  const timeZone = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : '';
+
+  function toggleSchedule() {
+    scheduleOpen = !scheduleOpen;
+    scheduleError = '';
+    // Start on the first quick pick, so it shows as chosen.
+    if (scheduleOpen) scheduleAt = toLocalInput(quickTimes[0]!.at);
+  }
+
+  async function schedule(at: Date | null = scheduleDate) {
+    if (!publisher?.schedule || sheet?.kind === 'publishing') return;
+    if (!at || Number.isNaN(at.getTime())) {
+      scheduleError = 'Pick a date and time.';
+      return;
+    }
+    if (at.getTime() < Date.now() + 60_000) {
+      scheduleError = 'Pick a time in the future.';
+      return;
+    }
+    if (!canPublish) return;
+    scheduleOpen = false;
+    lastAttempt = { action: 'schedule', at };
+    const { kind, snapshot } = await prepare();
+    sheet = { kind: 'publishing', progress: { step: 'Scheduling', done: 0, total: 1 } };
+    try {
+      await finish({ kind: 'scheduled', post: await publisher.schedule(kind, snapshot, at) });
+      scheduleAt = '';
+    } catch (err) {
+      sheet = { kind: 'error', message: describeError(err) };
+    }
+  }
+
+  function retry() {
+    if (lastAttempt.action === 'schedule') schedule(lastAttempt.at);
+    else publish();
+  }
+
+  /** Put a draft in the editor, replacing what's there (e.g. one taken off the schedule). */
+  export function replaceDraft(next: Draft) {
+    draft = next;
+    sheet = null;
+    tab = 'write';
+    tick().then(() => textarea?.focus());
+  }
+
+  export function isEmpty(): boolean {
+    return !draft.text.trim() && !draft.title.trim() && !draft.images.length;
   }
 
   function startOver() {
@@ -289,11 +380,12 @@
       e.preventDefault();
       publish();
     }
-    if (e.key === 'Escape') settingsOpen = false;
+    if (e.key === 'Escape') settingsOpen = scheduleOpen = false;
   }
 
   function onWindowClick(e: MouseEvent) {
     if (settingsOpen && settingsEl && !settingsEl.contains(e.target as Node)) settingsOpen = false;
+    if (scheduleOpen && scheduleEl && !scheduleEl.contains(e.target as Node)) scheduleOpen = false;
   }
 
   function onInput() {
@@ -393,7 +485,7 @@
               class="sp-icon-btn"
               onclick={() => fileInput?.click()}
               aria-label="Add images"
-              title="Add images (or paste / drop them)"
+              {@attach tooltip()}
             >
               <Icon name="image" />
             </button>
@@ -415,7 +507,7 @@
               aria-pressed={mode === 'article'}
               onclick={() => setArticle(mode !== 'article')}
               aria-label="Write as an article"
-              title={mode === 'article' ? 'Back to a post' : 'Write as an article'}
+              {@attach tooltip(mode === 'article' ? 'Back to a post' : 'Write as an article')}
             >
               <Icon name="article" />
             </button>
@@ -425,7 +517,7 @@
                 class="sp-icon-btn"
                 onclick={() => pageContext && insertPage(pageContext)}
                 aria-label="Add this page"
-                title="Add this page’s link"
+                {@attach tooltip('Add this page’s link')}
               >
                 <Icon name="link" />
               </button>
@@ -437,6 +529,7 @@
                 aria-expanded={settingsOpen}
                 aria-haspopup="true"
                 aria-label="Posting preferences"
+                {@attach tooltip()}
                 onclick={() => (settingsOpen = !settingsOpen)}
               >
                 <Icon name="settings" />
@@ -487,10 +580,73 @@
             {:else}
               <span class="stat">{words.toLocaleString()} words · {Math.max(1, Math.round(words / 230))} min</span>
             {/if}
+            {#if canSchedule}
+              <div class="schedule" bind:this={scheduleEl}>
+                <button
+                  type="button"
+                  class="sp-icon-btn"
+                  aria-expanded={scheduleOpen}
+                  aria-haspopup="dialog"
+                  aria-label="Post later"
+                  {@attach tooltip()}
+                  disabled={!canPublish}
+                  onclick={toggleSchedule}
+                >
+                  <Icon name="clock" />
+                </button>
+                {#if scheduleOpen}
+                  <div class="menu schedule-menu" role="dialog" aria-label="Post later">
+                    <p class="sp-kicker menu-label">Post it later</p>
+                    <div class="quick">
+                      {#each quickTimes as q (q.label)}
+                        <button
+                          type="button"
+                          class="quick-pick"
+                          aria-pressed={scheduleAt === toLocalInput(q.at)}
+                          onclick={() => {
+                            scheduleAt = toLocalInput(q.at);
+                            scheduleError = '';
+                          }}
+                        >
+                          <strong>{q.label}</strong>
+                          <small>{formatWhen(q.at)}</small>
+                        </button>
+                      {/each}
+                    </div>
+                    <label class="when">
+                      <span>Or pick a time</span>
+                      <input
+                        class="sp-input"
+                        type="datetime-local"
+                        bind:value={scheduleAt}
+                        min={toLocalInput(new Date())}
+                        oninput={() => (scheduleError = '')}
+                        aria-invalid={!!scheduleError}
+                      />
+                    </label>
+                    {#if scheduleError}
+                      <p class="schedule-error" role="alert">{scheduleError}</p>
+                    {:else if timeZone}
+                      <p class="zone">Times are in your time zone, {timeZone.replace(/_/g, ' ')}.</p>
+                    {/if}
+                    <button
+                      type="button"
+                      class="sp-btn sp-btn-primary schedule-go"
+                      disabled={!scheduleDate}
+                      onclick={() => schedule()}
+                    >
+                      {scheduleDate && !Number.isNaN(scheduleDate.getTime())
+                        ? `Schedule for ${formatWhen(scheduleDate)}`
+                        : 'Schedule'}
+                    </button>
+                  </div>
+                {/if}
+              </div>
+            {/if}
             <button
               type="button"
               class="sp-btn sp-btn-primary"
-              disabled={!!ctx && !canPublish && !partial}
+              disabled={!!publisher && !canPublish && !partial}
               onclick={publish}
               title="⌘/Ctrl + Enter"
             >
@@ -500,7 +656,13 @@
         </footer>
 
         {#if sheet}
-          <PublishSheet state={sheet} onretry={publish} ondismiss={() => (sheet = null)} onnew={startOver} />
+          <PublishSheet
+            state={sheet}
+            onretry={retry}
+            ondismiss={() => (sheet = null)}
+            onnew={startOver}
+            onshowscheduled={onShowScheduled}
+          />
         {/if}
       </div>
     </section>
@@ -887,6 +1049,74 @@
   .menu-item:hover {
     background: var(--sp-sunken);
   }
+  .schedule {
+    position: relative;
+  }
+  .schedule-menu {
+    /* Below the toolbar: above it, a short draft leaves no room. */
+    top: calc(100% + 8px);
+    bottom: auto;
+    left: auto;
+    right: 0;
+    width: min(300px, calc(100vw - 40px));
+    display: grid;
+    gap: 8px;
+  }
+  .quick {
+    display: grid;
+    gap: 2px;
+  }
+  .quick-pick {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--sp-ink);
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .quick-pick:hover {
+    background: var(--sp-sunken);
+  }
+  .quick-pick[aria-pressed='true'] {
+    background: var(--sp-accent-soft);
+  }
+  .quick-pick strong {
+    font-weight: 550;
+  }
+  .quick-pick small {
+    color: var(--sp-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .when {
+    display: grid;
+    gap: 6px;
+    padding: 4px 8px 0;
+    font-size: 13px;
+    font-weight: 550;
+    color: var(--sp-ink-2);
+  }
+  .when .sp-input[aria-invalid='true'] {
+    border-color: var(--sp-danger);
+  }
+  .zone,
+  .schedule-error {
+    margin: 0 8px;
+    font-size: 12px;
+    color: var(--sp-muted);
+  }
+  .schedule-error {
+    color: var(--sp-danger);
+  }
+  .schedule-go {
+    margin: 4px 8px 6px;
+  }
   .menu hr {
     border: 0;
     border-top: 1px solid var(--sp-line);
@@ -964,6 +1194,18 @@
     .meta .seg,
     .meta .stat {
       display: none;
+    }
+    /* No room beside the button: span the editor instead. */
+    .bar {
+      position: relative;
+    }
+    .schedule {
+      position: static;
+    }
+    .schedule-menu {
+      left: 8px;
+      right: 8px;
+      width: auto;
     }
   }
   .empty {

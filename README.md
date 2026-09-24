@@ -2,7 +2,7 @@
 
 A quiet composer for Bluesky and the Atmosphere. You write without the feed in front of you. When a draft goes past 300 characters, Spool suggests a **thread** or an **article**, preselecting whatever you picked last time. Tick "Remember my choice" and it stops asking.
 
-- **Web app** (SvelteKit): the composer, plus server-rendered article pages.
+- **Web app** (SvelteKit): the composer, scheduled posts, and server-rendered article pages.
 - **Browser extension** (WXT + Svelte): the same composer in a side panel. Press `Alt+Shift+S` on any page; the page's link and your selected text are pulled in.
 
 ## Layout
@@ -24,12 +24,17 @@ apps/extension      WXT side panel (Chrome) / sidebar (Firefox)
 
 **The thread splitter** (`packages/core/src/split.ts`) breaks at paragraphs first, then lines, then sentences, then words. It only ever splits on whitespace, so links, mentions and hashtags stay whole. It counts graphemes, and it counts links at the shortened length Bluesky displays them. With `1/n` numbering on, it re-splits whenever n gains a digit.
 
+**Scheduled posts** (web app only). The clock next to Post picks a time. The draft goes to D1, its images to R2, and a cron trigger publishes whatever is due every minute. Each post is claimed with a lease, so overlapping runs never publish it twice. Record keys, and a thread's split, are reserved before the first attempt, so a retry writes to the same keys. Failures are retried after 1, 5, 15 and 60 minutes, then the post is marked failed and shows up under "Needs attention". Losing access to the account fails it straight away. "Edit" takes a post off the schedule and back into the composer.
+
+**Sessions.** The web app signs in on the server, as a confidential OAuth client. Its token requests are signed with `OAUTH_PRIVATE_KEY`, which gets it sessions long enough to publish days later. Tokens and DPoP keys are stored in D1, and the browser only holds a session cookie. Signing out revokes the grant, unless posts are still waiting to go out. The extension still signs in and publishes from the browser, so it can't schedule. Handles and DIDs are resolved by the atproto libraries. Those fetch with `redirect: 'error'`, which Workers reject, so `patches/` switches them to `'manual'`. Every call site already rejects non-2xx responses, so redirects still fail rather than being followed. The patches are pinned to exact versions: when pnpm refuses to apply one after an upgrade, check whether the new version still needs it.
+
 **Scopes.** Sign-in asks for granular scopes only: create posts, write `site.standard.*`, upload images. Profiles and handles are read from the public AppView. If your PDS doesn't support granular scopes yet, change `OAUTH_SCOPE` in `packages/core/src/oauth.ts` to `atproto transition:generic`.
 
 ## Develop
 
 ```sh
 pnpm install
+pnpm --filter @spool/web db:migrate:local   # once, and after adding a migration
 pnpm test          # core: splitter, records, markdown, publish flows (in-memory PDS)
 pnpm check         # svelte-check / tsc across packages
 pnpm lint          # oxlint
@@ -37,7 +42,7 @@ pnpm fmt           # oxfmt (use fmt:check in CI)
 pnpm dev           # web app on http://127.0.0.1:5173
 ```
 
-Local sign-in uses an atproto **loopback client**, so no hosted metadata is needed. Use `127.0.0.1`, not `localhost`.
+Local sign-in uses an atproto **loopback client**, so it needs no key or hosted metadata, but its sessions are short. Use `127.0.0.1`, not `localhost`. `vite dev` gets local D1 and R2 through wrangler's platform proxy. It has no cron trigger, so the scheduler runs whenever the scheduled list refreshes (`POST /api/dev/run-scheduled`). `pnpm --filter @spool/web preview` runs the real Worker; trigger its cron with `curl "http://127.0.0.1:4173/__scheduled?cron=*+*+*+*+*"`.
 
 > **Set `PUBLIC_APP_ORIGIN` before publishing a real article**, even in dev. The article URL is written permanently into the record and the link post. If it isn't set, the URL uses whatever origin you're on, which means `127.0.0.1` in dev.
 
@@ -45,8 +50,20 @@ Local sign-in uses an atproto **loopback client**, so no hosted metadata is need
 
 The web app runs on Cloudflare Workers (`@sveltejs/adapter-cloudflare`). Production is `https://spool.at`; the domain, the Worker name and the runtime variables live in `apps/web/wrangler.jsonc`.
 
+First time only:
+
 ```sh
-pnpm --filter @spool/web exec wrangler login   # once
+cd apps/web
+pnpm exec wrangler login
+pnpm exec wrangler d1 create spool                    # put the database_id in wrangler.jsonc
+pnpm exec wrangler r2 bucket create spool-scheduled-images
+node scripts/oauth-key.mjs | pnpm exec wrangler secret put OAUTH_PRIVATE_KEY
+```
+
+Then, for each deploy (apply migrations first when there are new ones):
+
+```sh
+pnpm --filter @spool/web db:migrate                # D1 migrations, remote
 pnpm deploy:web                                # vite build && wrangler deploy
 pnpm --filter @spool/web preview               # the built Worker locally, on http://127.0.0.1:4173
 ```
@@ -55,7 +72,11 @@ Use `pnpm deploy:web`, not `pnpm deploy`, which is a built-in pnpm command.
 
 `.env` is only read by `vite dev`. The deployed Worker gets `PUBLIC_APP_ORIGIN`, `PUBLIC_EXTENSION_REDIRECT_URIS` and the optional `ATPROTO_*` overrides from `vars` in `wrangler.jsonc`.
 
-The app serves its OAuth client metadata at `/client-metadata.json`. That URL is the `client_id`, and the authorization server fetches it from its own servers, so keep Bot Fight Mode, "I'm Under Attack" and any WAF challenge off for `/client-metadata.json` and `/extension-client-metadata.json`.
+The app serves its OAuth client metadata at `/oauth/client-metadata.json`. That URL is the `client_id`, and the authorization server fetches it from its own servers, so keep Bot Fight Mode, "I'm Under Attack" and any WAF challenge off for `/oauth/client-metadata.json`, `/jwks.json` and `/extension-client-metadata.json`. These are sent with `cache-control: no-cache`; don't let a Cloudflare cache rule override that. Authorization servers keep their own copy for about 10 minutes, so a metadata change takes that long to reach them. A stale copy stuck in a cache means "redirect_uri not registered" errors until it expires.
+
+Keep `OAUTH_PRIVATE_KEY` stable. If you rotate it, sessions signed with the old key stop refreshing, and everyone has to sign in again.
+
+`wrangler.jsonc` points `main` at `worker/index.ts`, which wraps SvelteKit's output and adds the cron handler. The adapter reads `svelte.wrangler.jsonc` instead, to learn where to write that output. Publishing runs inside the Worker, so the Workers Paid plan's CPU limits are the comfortable fit.
 
 Article and index pages send `s-maxage`, and the adapter's worker stores those responses in Cloudflare's edge cache. That only happens on the custom domain; `*.workers.dev` URLs skip the cache.
 

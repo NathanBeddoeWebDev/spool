@@ -219,6 +219,34 @@ select {
   color: var(--sp-accent);
 }
 
+/* Label for icon controls. Positioned by lib/tooltip.ts; shown as a popover, so reset the UA box. */
+.sp-tooltip {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--sp-ink);
+  color: var(--sp-bg);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: var(--sp-shadow);
+  pointer-events: none;
+  overflow: visible;
+}
+.sp-tooltip:popover-open {
+  animation: sp-tooltip-in 0.14s var(--sp-ease);
+}
+@keyframes sp-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
 /* Tertiary action: plain text, for the least important choice in a group. */
 .sp-link {
   border: 0;
@@ -279,6 +307,18 @@ select {
   transition:
     border-color 0.2s var(--sp-ease),
     box-shadow 0.2s var(--sp-ease);
+}
+/* iOS draws date inputs natively, at a minimum width that ignores the box. */
+.sp-input[type='datetime-local'] {
+  display: block;
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  /* Without native styling, iOS puts the value at the top; centre it. */
+  line-height: 38px;
+}
+.sp-input[type='datetime-local']::-webkit-date-and-time-value {
+  text-align: left;
 }
 .sp-input:focus {
   outline: none;

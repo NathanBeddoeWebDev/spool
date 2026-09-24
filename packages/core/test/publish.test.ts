@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Agent } from '@atproto/api';
-import { publishArticle, publishThread, type PublishContext } from '../src/publish.ts';
+import { publishArticle, publishPost, publishThread, type PublishContext } from '../src/publish.ts';
 import { newDraft, type ThreadProgress } from '../src/types.ts';
 
 /** In-memory stand-in for a PDS, enough to exercise the publish flows. */
-function fakeAgent(opts: { failCreateAt?: number } = {}) {
+function fakeAgent(opts: { failCreateAt?: number; dropApplyWritesResponse?: boolean } = {}) {
   const repo = new Map<string, { cid: string; value: any }>();
   let creates = 0;
   let cidN = 0;
@@ -41,9 +41,18 @@ function fakeAgent(opts: { failCreateAt?: number } = {}) {
                 .map(([uri, r]) => ({ uri, cid: r.cid, value: r.value })),
             },
           }),
-          applyWrites: async ({ repo: did, writes }: any) => ({
-            data: { results: writes.map((w: any) => put(`at://${did}/${w.collection}/${w.rkey}`, w.value)) },
-          }),
+          applyWrites: async ({ repo: did, writes }: any) => {
+            if (writes.some((w: any) => repo.has(`at://${did}/${w.collection}/${w.rkey}`))) {
+              throw new Error('Record already exists');
+            }
+            const results = writes.map((w: any) => put(`at://${did}/${w.collection}/${w.rkey}`, w.value));
+            // The writes landed, but the response never made it back.
+            if (opts.dropApplyWritesResponse) {
+              opts.dropApplyWritesResponse = false;
+              throw new Error('network down');
+            }
+            return { data: { results } };
+          },
         },
       },
     },
@@ -107,5 +116,41 @@ describe('publishArticle', () => {
     // A second article reuses the same publication.
     await publishArticle(ctx, newDraft({ text: 'Another one, long enough.' }));
     expect([...repo.keys()].filter((u) => u.includes('site.standard.publication'))).toHaveLength(1);
+  });
+});
+
+describe('reserved record keys', () => {
+  it('lets a post retry without posting twice', async () => {
+    const { agent, repo } = fakeAgent({ failCreateAt: 1 });
+    const ctx: PublishContext = { agent, did: 'did:plc:me', appOrigin: 'https://spool.test' };
+    const draft = newDraft({ text: 'Hello there', rkeys: ['3kaaaaaaaaaa2'] });
+    // The first create fails outright; the retry writes to the same key.
+    await expect(publishPost(ctx, draft)).rejects.toThrow('network down');
+    const result = await publishPost(ctx, draft);
+    expect(result.uri).toBe('at://did:plc:me/app.bsky.feed.post/3kaaaaaaaaaa2');
+    expect(repo.size).toBe(1);
+  });
+
+  it('recovers an article whose writes landed but whose response was lost', async () => {
+    const { agent, repo } = fakeAgent({ dropApplyWritesResponse: true });
+    const ctx: PublishContext = { agent, did: 'did:plc:me', appOrigin: 'https://spool.test' };
+    const draft = newDraft({ text: '# Hi\n\nBody text.', rkeys: ['3kdddddddddd2', '3kpppppppppp2'] });
+    const result = await publishArticle(ctx, draft);
+    if (result.kind !== 'article') throw new Error('wrong kind');
+    expect(result.documentUri).toBe('at://did:plc:me/site.standard.document/3kdddddddddd2');
+    expect(result.postUri).toBe('at://did:plc:me/app.bsky.feed.post/3kpppppppppp2');
+    // Publication, document and post: nothing written twice.
+    expect(repo.size).toBe(3);
+    expect(repo.get(result.documentUri)!.value.bskyPostRef.uri).toBe(result.postUri);
+  });
+
+  it('still fails an article when nothing landed', async () => {
+    const { agent } = fakeAgent();
+    (agent as any).com.atproto.repo.applyWrites = async () => {
+      throw new Error('PDS down');
+    };
+    const ctx: PublishContext = { agent, did: 'did:plc:me', appOrigin: 'https://spool.test' };
+    const draft = newDraft({ text: '# Hi\n\nBody.', rkeys: ['3kdddddddddd2', '3kpppppppppp2'] });
+    await expect(publishArticle(ctx, draft)).rejects.toThrow('PDS down');
   });
 });

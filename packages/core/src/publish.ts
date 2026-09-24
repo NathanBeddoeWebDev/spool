@@ -20,7 +20,17 @@ import {
 import { buildRichText } from './richtext.ts';
 import { distributeImages, splitThread } from './split.ts';
 import { URL_RE, measure, POST_GRAPHEME_LIMIT } from './text.ts';
-import type { Draft, DraftImage, PublishProgress, PublishResult, StrongRef, ThreadProgress } from './types.ts';
+import type {
+  Draft,
+  DraftImage,
+  PublishHooks,
+  PublishKind,
+  PublishResult,
+  StrongRef,
+  ThreadProgress,
+} from './types.ts';
+
+export type { PublishHooks };
 
 export interface PublishContext {
   /** Authenticated agent (OAuth session). */
@@ -30,12 +40,6 @@ export interface PublishContext {
   displayName?: string;
   /** Origin that renders articles, e.g. https://spool.example */
   appOrigin: string;
-}
-
-export interface PublishHooks {
-  onProgress?: (p: PublishProgress) => void;
-  /** Called after every post in a thread so callers can persist resume state. */
-  onThreadProgress?: (p: ThreadProgress) => void | Promise<void>;
 }
 
 async function upload(agent: Agent, blob: Blob): Promise<BlobRef> {
@@ -125,7 +129,10 @@ export async function publishPost(ctx: PublishContext, draft: Draft, hooks: Publ
     if (card) embed = externalEmbed(card);
   }
 
-  const ref = await createPost(ctx, TID.nextStr(), draft.text.trim(), { embed, langs: draft.langs });
+  const ref = await createPost(ctx, draft.rkeys?.[0] ?? TID.nextStr(), draft.text.trim(), {
+    embed,
+    langs: draft.langs,
+  });
   hooks.onProgress?.({ step: 'Posted', done: 1, total: 1 });
   return { kind: 'post', uri: ref.uri, url: bskyPostUrl(ref.uri) };
 }
@@ -235,8 +242,8 @@ export async function publishArticle(
   hooks.onProgress?.({ step: 'Uploading cover', done: 1, total });
   const cover = draft.images[0] ? await upload(ctx.agent, draft.images[0].blob) : undefined;
 
-  const docRkey = TID.nextStr();
-  const postRkey = TID.nextStr();
+  const docRkey = draft.rkeys?.[0] ?? TID.nextStr();
+  const postRkey = draft.rkeys?.[1] ?? TID.nextStr();
   const path = `/${docRkey}`;
   const url = publication.url + path;
   const publishedAt = new Date().toISOString();
@@ -254,17 +261,28 @@ export async function publishArticle(
   });
 
   hooks.onProgress?.({ step: 'Publishing', done: 2, total });
-  const res = await ctx.agent.com.atproto.repo.applyWrites({
-    repo: ctx.did,
-    writes: [
-      { $type: 'com.atproto.repo.applyWrites#create', collection: DOCUMENT_COLLECTION, rkey: docRkey, value: doc },
-      { $type: 'com.atproto.repo.applyWrites#create', collection: POST_COLLECTION, rkey: postRkey, value: post },
-    ],
-  });
-
-  const results = (res.data.results ?? []) as Array<{ uri?: string; cid?: string }>;
-  const docResult = results[0];
-  const postResult = results[1];
+  let docResult: { cid?: string } | undefined;
+  let postResult: { cid?: string } | undefined;
+  try {
+    const res = await ctx.agent.com.atproto.repo.applyWrites({
+      repo: ctx.did,
+      writes: [
+        { $type: 'com.atproto.repo.applyWrites#create', collection: DOCUMENT_COLLECTION, rkey: docRkey, value: doc },
+        { $type: 'com.atproto.repo.applyWrites#create', collection: POST_COLLECTION, rkey: postRkey, value: post },
+      ],
+    });
+    [docResult, postResult] = (res.data.results ?? []) as Array<{ cid?: string }>;
+  } catch (err) {
+    // With reserved keys, an earlier attempt may already have landed both records.
+    const [existingDoc, existingPost] = draft.rkeys
+      ? await Promise.all([
+          getExisting(ctx.agent, ctx.did, DOCUMENT_COLLECTION, docRkey),
+          getExisting(ctx.agent, ctx.did, POST_COLLECTION, postRkey),
+        ])
+      : [null, null];
+    if (!existingDoc || !existingPost) throw err;
+    [docResult, postResult] = [existingDoc, existingPost];
+  }
   const documentUri = atUri(ctx.did, DOCUMENT_COLLECTION, docRkey);
   const postUri = atUri(ctx.did, POST_COLLECTION, postRkey);
 
@@ -285,4 +303,25 @@ export async function publishArticle(
 
   hooks.onProgress?.({ step: 'Published', done: total, total });
   return { kind: 'article', url, postUrl: bskyPostUrl(postUri), documentUri, postUri };
+}
+
+/**
+ * Fix a draft's record keys (and a thread's split) before its first attempt,
+ * so that however many times it's retried, it can't post twice.
+ */
+export function reserveKeys(kind: PublishKind, draft: Draft): Draft {
+  if (kind === 'thread') return draft.threadProgress ? draft : { ...draft, threadProgress: planThread(draft) };
+  if (draft.rkeys) return draft;
+  return { ...draft, rkeys: kind === 'article' ? [TID.nextStr(), TID.nextStr()] : [TID.nextStr()] };
+}
+
+export function publishDraft(
+  ctx: PublishContext,
+  kind: PublishKind,
+  draft: Draft,
+  hooks: PublishHooks = {},
+): Promise<PublishResult> {
+  if (kind === 'thread') return publishThread(ctx, draft, hooks);
+  if (kind === 'article') return publishArticle(ctx, draft, hooks);
+  return publishPost(ctx, draft, hooks);
 }
